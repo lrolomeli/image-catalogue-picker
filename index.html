@@ -1214,6 +1214,9 @@ async function checkExistingCandidates() {
       for (const [productId, indices] of Object.entries(data.candidates)) {
         const ps = getProductState(productId);
         ps.candidates = indices;
+        if (indices.length > 0 && ps.selectedIdx === null && !hasExistingImage(STATE.catalog.products.find(p => p.id === productId))) {
+          ps.selectedIdx = 1;
+        }
       }
     }
   } catch (err) {
