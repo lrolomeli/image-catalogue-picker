@@ -675,8 +675,9 @@
 const STATE = {
   // App data
   catalog: null,        // { giro: { slug, name, desc }, products: [] }
-  imagesBasePath: '',   // e.g., 'file:///path/to/images/catalogs/'
-  
+  imagesBasePath: '',   // e.g., 'data/images/<giro>/'
+  originalJsonName: '',  // e.g., 'abarrotes' (without .json)
+
   // Working set
   workingProducts: [],   // Products selected for download/selection work
   selectedForWork: new Set(), // IDs of products user wants to work on
@@ -928,8 +929,8 @@ function renderWorkStep() {
     <div class="action-bar">
       <span class="info">${selected} de ${STATE.workingProducts.length} productos tienen selección</span>
       <div class="flex gap-2">
-        <button class="btn btn-primary" onclick="confirmExport()" ${selected < STATE.workingProducts.length ? '' : ''}>
-          📦 Exportar
+        <button class="btn btn-primary" onclick="confirmSave()">
+          💾 Guardar
         </button>
       </div>
     </div>
@@ -963,7 +964,7 @@ function renderProductCard(product) {
       </div>
       <div class="product-card-body">
         <p class="product-card-status">
-          ${ps.downloading ? `Descargando... ${ps.downloadedCount}/18` : 
+          ${ps.downloading ? `Descargando... ${ps.downloadedCount}/9` :
             candidates.length > 0 ? `${candidates.length} imágenes` : 'Sin imágenes'}
         </p>
         
@@ -1192,8 +1193,27 @@ function startWork() {
   STATE.currentStep = 'work';
   STATE.currentPage = 0;
   document.getElementById('btnSave').disabled = false;
-  document.getElementById('btnExport').disabled = false;
+  document.getElementById('btnExport').disabled = true;
   render();
+
+  // Auto-download candidates for products without them
+  autoDownloadCandidates();
+}
+
+async function autoDownloadCandidates() {
+  const productsNeedingDownload = STATE.workingProducts.filter(p => {
+    const ps = getProductState(p.id);
+    return ps.candidates.length === 0 && !hasExistingImage(p);
+  });
+
+  if (productsNeedingDownload.length === 0) return;
+
+  STATE.isDownloading = true;
+  STATE.downloadQueue = productsNeedingDownload;
+  STATE.currentDownloadIdx = 0;
+  render();
+
+  await downloadNextBatch();
 }
 
 function startDownloads() {
@@ -1361,6 +1381,7 @@ async function handleFileSelect(event) {
     });
 
     const jsonName = file.name.replace(/\.json$/, '');
+    STATE.originalJsonName = jsonName;
     STATE.imagesBasePath = `data/images/${jsonName}/`;
 
     STATE.currentStep = 'select';
@@ -1419,66 +1440,45 @@ async function saveFile() {
   URL.revokeObjectURL(url);
 }
 
-async function showExportDialog() {
-  const folder = prompt('Ruta de la carpeta de imágenes (ej: /home/user/gs-ecom/frontend/public/images/catalogs/):');
-  if (!folder) return;
-  
-  STATE.imagesBasePath = folder.endsWith('/') ? folder : folder + '/';
-  
-  // Do export
-  await doExport();
-}
-
-async function doExport() {
+async function doSave() {
   if (!STATE.catalog) return;
-  
-  const giroSlug = getGiroSlug();
-  
-  const exportData = {
-    giro: STATE.catalog.giro,
-    products: STATE.catalog.products.map(p => {
-      const ps = STATE.productState[p.id];
-      let image = p.image;
-      
-      if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
-        const slug = slugify(p.name);
-        if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
-          image = `/images/catalogs/${giroSlug}/${slug}.webp`;
-        } else {
-          image = `/images/catalogs/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
-        }
-      }
-      
-      return { ...p, image };
-    }),
-  };
-  
+
+  const selections = {};
+  STATE.catalog.products.forEach(p => {
+    const ps = STATE.productState[p.id];
+    if (ps) {
+      selections[p.id] = {
+        selectedIdx: ps.selectedIdx,
+      };
+    }
+  });
+
   try {
-    const res = await fetch('/api/export', {
+    const res = await fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        catalog: exportData,
+        catalog: STATE.catalog,
+        selections: selections,
         imagesBasePath: STATE.imagesBasePath,
-        workingProducts: STATE.workingProducts.map(p => p.id),
       })
     });
-    
+
     const data = await res.json();
-    
+
     if (data.success) {
-      alert(`Exportado a: ${data.exportPath}\n\nCopia manualmente a gs-ecom.`);
+      alert(`Guardado en: ${data.path}\n\nCarpeta de imágenes: ${STATE.imagesBasePath}`);
     } else {
-      alert('Error al exportar: ' + data.error);
+      alert('Error al guardar: ' + data.error);
     }
   } catch (err) {
-    alert('Error al exportar: ' + err.message);
+    alert('Error al guardar: ' + err.message);
   }
 }
 
-function confirmExport() {
-  if (!confirm(`¿Exportar ${STATE.workingProducts.length} productos?\nSe generará catalog.json con todos los productos.`)) return;
-  doExport();
+function confirmSave() {
+  if (!confirm(`¿Guardar ${STATE.workingProducts.length} productos?\nSe generará data/${getGiroSlug()}.json`)) return;
+  doSave();
 }
 
 // ─── Initialize ────────────────────────────────────────────────────────────

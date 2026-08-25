@@ -45,11 +45,11 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
-        
+
         if parsed.path == "/api/download":
             self.handle_download()
-        elif parsed.path == "/api/export":
-            self.handle_export()
+        elif parsed.path == "/api/save":
+            self.handle_save()
         elif parsed.path == "/api/status":
             self.handle_status()
         else:
@@ -95,51 +95,68 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 
-    def handle_export(self):
+    def handle_save(self):
         try:
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
             data = json.loads(body)
-            
+
             catalog = data.get("catalog", {})
+            product_selections = data.get("selections", {})
             images_base_path = data.get("imagesBasePath", "")
-            
+
             if not catalog:
                 self.send_json({"success": False, "error": "Missing catalog"})
                 return
-            
+
             giro_slug = catalog.get("giro", {}).get("slug", "catalog")
-            
-            export_dir = BASE_DIR / "exports" / giro_slug
-            images_dir = export_dir / "images"
-            images_dir.mkdir(parents=True, exist_ok=True)
-            
-            catalog_path = export_dir / "catalog.json"
-            with open(catalog_path, "w", encoding="utf-8") as f:
-                json.dump(catalog, f, indent=2, ensure_ascii=False)
-            
             source_base = images_base_path.replace("file://", "")
-            
+            images_dir = Path(source_base)
+            images_dir.mkdir(parents=True, exist_ok=True)
+
+            saved_products = []
             for product in catalog.get("products", []):
-                image = product.get("image")
-                if not image:
-                    continue
-                
-                if "_candidates" in image:
-                    filename = Path(image).name
-                    candidate_folder = Path(image).parent.name
-                    src = Path(source_base) / "_candidates" / candidate_folder / filename
-                else:
-                    filename = Path(image).name
-                    src = Path(source_base) / image.lstrip("/")
-                
-                dst = images_dir / filename
-                
-                if src.exists():
-                    shutil.copy2(src, dst)
-            
-            self.send_json({"success": True, "exportPath": str(export_dir)})
-            
+                product_id = product.get("id")
+                selection = product_selections.get(product_id, {})
+                selected_idx = selection.get("selectedIdx")
+                existing_image = product.get("image")
+
+                new_image = None
+
+                if selected_idx is not None and selected_idx != 'existing':
+                    candidate_dir = Path(source_base) / "_candidates" / product_id
+                    if candidate_dir.exists():
+                        src_webp = candidate_dir / f"{pad(selected_idx)}.webp"
+                        if src_webp.exists():
+                            slug = product.get("name", "").lower().replace(" ", "-")
+                            dst_webp = images_dir / f"{slug}.webp"
+                            shutil.copy2(src_webp, dst_webp)
+                            new_image = f"/images/catalogs/{giro_slug}/{slug}.webp"
+                        else:
+                            new_image = existing_image
+                    else:
+                        new_image = existing_image
+                elif selected_idx == 'existing' or (selected_idx is None and existing_image):
+                    new_image = existing_image
+
+                saved_products.append({
+                    **product,
+                    "image": new_image
+                })
+
+            saved_catalog = {
+                "giro": catalog.get("giro"),
+                "products": saved_products
+            }
+
+            data_dir = BASE_DIR / "data"
+            data_dir.mkdir(exist_ok=True)
+            catalog_path = data_dir / f"{giro_slug}.json"
+            with open(catalog_path, "w", encoding="utf-8") as f:
+                json.dump(saved_catalog, f, indent=2, ensure_ascii=False)
+
+            self.send_json({"success": True, "path": str(catalog_path)})
+
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 
