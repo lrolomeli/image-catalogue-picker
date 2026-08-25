@@ -1251,8 +1251,8 @@ async function downloadNextBatch() {
 
 // ─── Image Selection ────────────────────────────────────────────────────────
 function selectImage(productId, idx, src) {
-  // Open expanded view
-  openExpandedModal(productId, idx);
+  doSelectImage(productId, idx);
+  closeModal();
 }
 
 function doSelectImage(productId, idx) {
