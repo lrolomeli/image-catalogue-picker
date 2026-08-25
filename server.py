@@ -1,0 +1,204 @@
+#!/usr/bin/env python3
+"""
+Catalog Studio - Local Development Server
+
+Usage:
+    python server.py                    # Default port 3456
+    python server.py 8080                # Custom port
+
+API Endpoints:
+    POST /api/download   - Download images for a product
+    POST /api/export    - Export catalog to folder
+    GET  /api/status    - Check dependencies
+"""
+
+import http.server
+import socketserver
+import json
+import os
+import sys
+import subprocess
+import shutil
+from pathlib import Path
+from urllib.parse import urlparse
+
+PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3456
+BASE_DIR = Path(__file__).parent.resolve()
+
+# CORS headers
+HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+}
+
+
+class CatalogHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(BASE_DIR), **kwargs)
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        for k, v in HEADERS.items():
+            self.send_header(k, v)
+        self.end_headers()
+
+    def do_POST(self):
+        parsed = urlparse(self.path)
+        
+        if parsed.path == "/api/download":
+            self.handle_download()
+        elif parsed.path == "/api/export":
+            self.handle_export()
+        elif parsed.path == "/api/status":
+            self.handle_status()
+        else:
+            self.send_error(404)
+
+    def handle_download(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            data = json.loads(body)
+            
+            product_num = data.get("productNum")
+            product_name = data.get("productName")
+            images_base_path = data.get("imagesBasePath", "")
+            
+            if not product_num or not product_name:
+                self.send_json({"success": False, "error": "Missing parameters"})
+                return
+            
+            # Determine output directory
+            if images_base_path:
+                # Use the images base path
+                output_dir = images_base_path.replace("file://", "").replace("/images/catalogs", "")
+            else:
+                output_dir = str(BASE_DIR / "data" / "images")
+            
+            # Run the download script
+            script_path = BASE_DIR / "download-images.js"
+            result = subprocess.run(
+                ["node", str(script_path), str(product_num), product_name, output_dir],
+                capture_output=True,
+                text=True,
+                cwd=str(BASE_DIR),
+                timeout=120
+            )
+            
+            try:
+                # Parse last line as JSON
+                lines = result.stdout.strip().split('\n')
+                output = json.loads(lines[-1])
+                self.send_json({"success": True, **output})
+            except:
+                self.send_json({"success": False, "error": result.stderr or result.stdout})
+                
+        except subprocess.TimeoutExpired:
+            self.send_json({"success": False, "error": "Timeout"})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def handle_export(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            data = json.loads(body)
+            
+            catalog = data.get("catalog", {})
+            images_base_path = data.get("imagesBasePath", "")
+            working_products = data.get("workingProducts", [])
+            
+            if not catalog:
+                self.send_json({"success": False, "error": "Missing catalog"})
+                return
+            
+            # Create export directory
+            catalog_name = catalog.get("name", "catalog")
+            export_dir = BASE_DIR / "exports" / catalog_name
+            images_dir = export_dir / "images"
+            images_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Write catalog.json
+            catalog_path = export_dir / "catalog.json"
+            with open(catalog_path, "w", encoding="utf-8") as f:
+                json.dump(catalog, f, indent=2, ensure_ascii=False)
+            
+            # Copy selected images
+            source_base = images_base_path.replace("file://", "").replace("/images/catalogs", "") + "/images/catalogs"
+            
+            for product in catalog.get("products", []):
+                image = product.get("image")
+                if not image:
+                    continue
+                
+                # Determine source and destination
+                if "_candidates" in image:
+                    # Downloaded candidate
+                    filename = Path(image).name
+                    src = Path(source_base) / "_candidates" / Path(image).parent.name / filename
+                else:
+                    # Existing image
+                    filename = Path(image).name
+                    src = Path(source_base) / filename
+                
+                dst = images_dir / filename
+                
+                if src.exists():
+                    shutil.copy2(src, dst)
+            
+            self.send_json({"success": True, "exportPath": str(export_dir)})
+            
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def handle_status(self):
+        try:
+            result = subprocess.run(["node", "--version"], capture_output=True, text=True)
+            node_ok = result.returncode == 0
+        except:
+            node_ok = False
+        
+        try:
+            result = subprocess.run(
+                ["python3", "-c", "import sharp; print(sharp.__version__)"],
+                capture_output=True, text=True
+            )
+            sharp_ok = result.returncode == 0
+        except:
+            sharp_ok = False
+        
+        self.send_json({
+            "status": "ok",
+            "node": node_ok,
+            "sharp": sharp_ok,
+            "python_version": sys.version.split()[0],
+            "base_dir": str(BASE_DIR)
+        })
+
+    def send_json(self, data):
+        body = json.dumps(data).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", len(body))
+        for k, v in HEADERS.items():
+            self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def main():
+    print(f"Catalog Studio server starting...")
+    print(f"Base directory: {BASE_DIR}")
+    print(f"Open http://localhost:{PORT} in your browser")
+    print(f"Press Ctrl+C to stop\n")
+    
+    with socketserver.TCPServer(("", PORT), CatalogHandler) as httpd:
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalog Studio</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg-page: #f6f6f6;
+      --bg-card: #ffffff;
+      --bg-badge: #f0f0f0;
+      --bg-amber: #fff8e6;
+      --bg-black: #1a1a1a;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-hint: #ababab;
+      --text-link: #0066cc;
+      --text-savings: #d4750a;
+      --border: #e8e8e8;
+      --border-strong: #1a1a1a;
+      --green: #22c55e;
+      --green-light: #dcfce7;
+      --blue: #3b82f6;
+      --blue-light: #dbeafe;
+      --red: #ef4444;
+      --red-light: #fee2e2;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-page);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .btn:hover { background: var(--bg-badge); }
+    .btn-primary { background: var(--bg-black); color: white; border-color: var(--bg-black); }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-success { background: var(--green); color: white; border-color: var(--green); }
+    .btn-success:hover { opacity: 0.9; }
+    .btn-danger { background: var(--red); color: white; border-color: var(--red); }
+    .btn-sm { padding: 4px 10px; font-size: 12px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    /* Welcome / Load Screen */
+    .welcome {
+      text-align: center;
+      padding: 80px 24px;
+    }
+    
+    .welcome h2 {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    
+    .welcome p {
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .welcome-cards {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .welcome-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 280px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .welcome-card:hover {
+      border-color: var(--text-primary);
+      transform: translateY(-2px);
+    }
+    
+    .welcome-card .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    .welcome-card h3 {
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+    
+    .welcome-card p {
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+    
+    /* Step 1: Product Selection */
+    .step-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .step-header h2 {
+      font-size: 20px;
+    }
+    
+    .step-header .info {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .search-box {
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      width: 240px;
+      outline: none;
+    }
+    
+    .search-box:focus { border-color: var(--border-strong); }
+    
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 13px;
+      background: white;
+      outline: none;
+    }
+    
+    /* Product List */
+    .product-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .product-list-header {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 120px;
+      padding: 12px 16px;
+      background: var(--bg-badge);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      gap: 12px;
+    }
+    
+    .product-row {
+      display: grid;
+      grid-template-columns: 40px 1fr 120px 120px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .product-row:last-child { border-bottom: none; }
+    .product-row:hover { background: var(--bg-page); }
+    .product-row.selected { background: var(--bg-amber); }
+    
+    .product-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    
+    .product-name {
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .product-thumb-small {
+      width: 32px;
+      height: 32px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: var(--bg-badge);
+    }
+    
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .status-has-image { background: var(--green-light); color: #166534; }
+    .status-no-image { background: var(--bg-badge); color: var(--text-secondary); }
+    .status-downloading { background: var(--blue-light); color: #1e40af; }
+    
+    .btn-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      padding: 0;
+    }
+    
+    .btn-icon:hover { background: var(--bg-badge); }
+    
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 20px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .pagination-info {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    /* Bottom Action Bar */
+    .action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    
+    .action-bar .info {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    /* Step 2: Work Area */
+    .work-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .work-header h2 {
+      font-size: 20px;
+    }
+    
+    .work-stats {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+    }
+    
+    .work-stats .stat {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .work-stats .stat .num {
+      font-weight: 700;
+      font-size: 16px;
+    }
+    
+    /* Products Grid (2-3 per page) */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .product-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .product-card-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .product-card-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .product-card-body {
+      padding: 16px;
+    }
+    
+    .product-thumbnails {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    
+    .thumb {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.15s;
+      background: var(--bg-badge);
+      position: relative;
+    }
+    
+    .thumb:hover { border-color: var(--text-secondary); transform: scale(1.05); }
+    .thumb.selected { border-color: var(--green); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .thumb .num {
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      background: rgba(0,0,0,0.6);
+      color: white;
+      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    
+    .thumb .check {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 18px;
+      height: 18px;
+      background: var(--green);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      opacity: 0;
+    }
+    
+    .thumb.selected .check { opacity: 1; }
+    
+    .thumb-placeholder {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      background: var(--bg-badge);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--text-hint);
+      cursor: default;
+    }
+    
+    .product-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .product-card-status {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    
+    .modal {
+      background: var(--bg-card);
+      border-radius: 16px;
+      width: 95vw;
+      max-width: 900px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    
+    /* Expanded Image View */
+    .expanded-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .expanded-image-container {
+      width: 100%;
+      max-width: 600px;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--bg-page);
+    }
+    
+    .expanded-image-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    
+    .expanded-nav {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .expanded-nav .counter {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    
+    .expanded-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    /* All Candidates Grid (modal) */
+    .all-candidates-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    
+    .all-candidates-grid .thumb {
+      aspect-ratio: 1;
+    }
+    
+    /* Progress Bar */
+    .progress-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    
+    .progress-bar {
+      height: 8px;
+      background: var(--bg-badge);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .progress-bar .fill {
+      height: 100%;
+      background: var(--green);
+      transition: width 0.3s;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+    }
+    
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .empty-state h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    
+    .empty-state p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    
+    /* Hidden */
+    .hidden { display: none !important; }
+    
+    /* Utility */
+    .text-center { text-align: center; }
+    .mt-4 { margin-top: 16px; }
+    .mb-4 { margin-bottom: 16px; }
+    .text-sm { font-size: 12px; }
+    .text-secondary { color: var(--text-secondary); }
+    .font-bold { font-weight: 700; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .gap-2 { gap: 8px; }
+    .gap-4 { gap: 16px; }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-page); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-hint); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <h1>Catalog Studio</h1>
+  <div class="header-actions">
+    <button class="btn" id="btnOpen">📂 Abrir</button>
+    <button class="btn" id="btnSave" disabled>💾 Guardar</button>
+    <button class="btn btn-success" id="btnExport" disabled>📦 Exportar</button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="container" id="app">
+  <!-- Dynamic content rendered here -->
+</main>
+
+<!-- File input (hidden) -->
+<input type="file" id="fileInput" accept=".json" style="display:none">
+<input type="file" id="folderInput" webkitdirectory style="display:none">
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+const STATE = {
+  // App data
+  catalog: null,        // { giros: [], products: [] }
+  imagesBasePath: '',   // e.g., 'file:///path/to/images/catalogs/'
+  
+  // Working set
+  workingProducts: [],   // Products selected for download/selection work
+  selectedForWork: new Set(), // IDs of products user wants to work on
+  
+  // UI state
+  currentStep: 'welcome',  // welcome | select | work | export
+  currentPage: 0,
+  pageSize: 6,  // 2-3 products per page in work view
+  
+  // Filters
+  filter: 'all',  // all | no-image | has-image
+  search: '',
+  
+  // Per-product state
+  productState: {},  // productId -> { candidates: [], selectedIdx: null, downloading: false, progress: 0 }
+  
+  // Download queue
+  downloadQueue: [],
+  isDownloading: false,
+  currentDownloadIdx: 0,
+};
+
+let saveData = null; // For save functionality
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+function slugify(name) {
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, '-');
+}
+
+function pad(n, len = 2) { return String(n).padStart(len, '0'); }
+
+function getProductState(productId) {
+  if (!STATE.productState[productId]) {
+    STATE.productState[productId] = {
+      candidates: [],
+      selectedIdx: null,
+      downloading: false,
+      downloadedCount: 0,
+    };
+  }
+  return STATE.productState[productId];
+}
+
+function getImagePath(product, idx) {
+  if (!STATE.imagesBasePath) return null;
+  const slug = slugify(product.name);
+  const filename = `${slug}.webp`;
+  // For existing images (idx === 0 or 'existing')
+  if (idx === 'existing' || idx === 0) {
+    return `${STATE.imagesBasePath}${filename}`;
+  }
+  // For downloaded candidates
+  return `${STATE.imagesBasePath}_candidates/${pad(product.num)}-${slug}/${pad(idx)}.webp`;
+}
+
+function hasExistingImage(product) {
+  // Check if product has image set in catalog
+  return product.image && product.image.endsWith('.webp');
+}
+
+function getExistingImage(product) {
+  if (!hasExistingImage(product)) return null;
+  return getImagePath(product, 'existing');
+}
+
+// ─── Render Functions ───────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  
+  switch (STATE.currentStep) {
+    case 'welcome':
+      app.innerHTML = renderWelcome();
+      break;
+    case 'select':
+      app.innerHTML = renderSelectStep();
+      break;
+    case 'work':
+      app.innerHTML = renderWorkStep();
+      break;
+  }
+  
+  attachEventListeners();
+}
+
+function renderWelcome() {
+  return `
+    <div class="welcome">
+      <h2>Catalog Studio</h2>
+      <p>Herramienta visual para crear y editar catálogos de productos con imágenes.</p>
+      
+      <div class="welcome-cards">
+        <div class="welcome-card" id="btnNewCatalog">
+          <div class="icon">📋</div>
+          <h3>Nuevo Catálogo</h3>
+          <p>Crear un catálogo desde cero con productos vacíos</p>
+        </div>
+        
+        <div class="welcome-card" id="btnLoadCatalog">
+          <div class="icon">📂</div>
+          <h3>Abrir Catálogo</h3>
+          <p>Cargar un JSON existente y su carpeta de imágenes</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderSelectStep() {
+  const products = getFilteredProducts();
+  const total = STATE.catalog.products.length;
+  const withImage = STATE.catalog.products.filter(p => hasExistingImage(p)).length;
+  const noImage = total - withImage;
+  const selected = STATE.selectedForWork.size;
+  
+  const start = STATE.currentPage * 50;
+  const pageProducts = products.slice(start, start + 50);
+  
+  return `
+    <div class="step-header">
+      <div>
+        <h2>${STATE.catalog.giros?.[0]?.name || 'Catálogo'}</h2>
+        <p class="info">${total} productos • ${withImage} con imagen • ${noImage} sin imagen</p>
+      </div>
+      <div class="toolbar">
+        <input type="text" class="search-box" placeholder="Buscar producto..." 
+               value="${STATE.search}" oninput="onSearchChange(this.value)">
+        <select class="filter-select" onchange="onFilterChange(this.value)">
+          <option value="all" ${STATE.filter === 'all' ? 'selected' : ''}>Todos (${total})</option>
+          <option value="no-image" ${STATE.filter === 'no-image' ? 'selected' : ''}>Sin imagen (${noImage})</option>
+          <option value="has-image" ${STATE.filter === 'has-image' ? 'selected' : ''}>Con imagen (${withImage})</option>
+        </select>
+        <button class="btn btn-secondary" onclick="selectAll()">Seleccionar todos</button>
+        <button class="btn btn-secondary" onclick="clearSelection()">Limpiar</button>
+      </div>
+    </div>
+    
+    <div class="product-list">
+      <div class="product-list-header">
+        <span></span>
+        <span>Producto</span>
+        <span>Categoría</span>
+        <span>Estado</span>
+      </div>
+      
+      ${pageProducts.length === 0 ? `
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <h3>Sin resultados</h3>
+          <p>No hay productos que coincidan con tu búsqueda</p>
+        </div>
+      ` : pageProducts.map(p => renderProductRow(p)).join('')}
+      
+      <div class="pagination">
+        <button class="btn btn-sm" onclick="prevPage()" ${STATE.currentPage === 0 ? 'disabled' : ''}>← Anterior</button>
+        <span class="pagination-info">${start + 1}-${Math.min(start + 50, products.length)} de ${products.length}</span>
+        <button class="btn btn-sm" onclick="nextPage()" ${start + 50 >= products.length ? 'disabled' : ''}>Siguiente →</button>
+      </div>
+    </div>
+    
+    <div class="action-bar">
+      <span class="info">${selected} productos seleccionados</span>
+      <div class="flex gap-2">
+        <button class="btn" onclick="cancelSelect()">Cancelar</button>
+        <button class="btn btn-primary" onclick="startWork()" ${selected === 0 ? 'disabled' : ''}>
+          Trabajar con ${selected} productos →
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderProductRow(product) {
+  const isSelected = STATE.selectedForWork.has(product.id);
+  const hasImg = hasExistingImage(product);
+  const thumb = getExistingImage(product);
+  const ps = getProductState(product.id);
+  
+  let statusClass = 'status-no-image';
+  let statusText = 'Sin imagen';
+  if (hasImg) {
+    statusClass = 'status-has-image';
+    statusText = 'Tiene imagen';
+  }
+  if (ps.downloading) {
+    statusClass = 'status-downloading';
+    statusText = `Descargando ${ps.downloadedCount}/18`;
+  }
+  
+  return `
+    <div class="product-row ${isSelected ? 'selected' : ''}" onclick="toggleProductSelection('${product.id}', event)">
+      <div>
+        <input type="checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()">
+      </div>
+      <div class="product-name">
+        ${thumb ? `<img src="${thumb}" class="product-thumb-small" alt="">` : ''}
+        ${product.name}
+      </div>
+      <div class="text-secondary text-sm">${product.category || '-'}</div>
+      <div>
+        <span class="status-badge ${statusClass}">${statusText}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderWorkStep() {
+  const products = STATE.workingProducts;
+  const start = STATE.currentPage * STATE.pageSize;
+  const pageProducts = products.slice(start, start + STATE.pageSize);
+  
+  const downloaded = products.filter(p => {
+    const ps = getProductState(p.id);
+    return ps.candidates.length > 0 || hasExistingImage(p);
+  }).length;
+  
+  const selected = products.filter(p => {
+    const ps = getProductState(p.id);
+    return ps.selectedIdx !== null || hasExistingImage(p);
+  }).length;
+  
+  return `
+    <div class="work-header">
+      <button class="btn" onclick="backToSelect()">← Cambiar selección</button>
+      <h2>Trabajando con ${STATE.workingProducts.length} productos</h2>
+      <div class="work-stats">
+        <div class="stat">
+          <span class="num">${downloaded}</span>
+          <span>descargados</span>
+        </div>
+        <div class="stat">
+          <span class="num">${selected}</span>
+          <span>seleccionados</span>
+        </div>
+      </div>
+      <button class="btn btn-success" onclick="startDownloads()" id="btnStartDownload" ${STATE.isDownloading ? 'disabled' : ''}>
+        🔍 Descargar imágenes
+      </button>
+    </div>
+    
+    ${STATE.isDownloading ? renderProgressBar() : ''}
+    
+    <div class="products-grid">
+      ${pageProducts.map(p => renderProductCard(p)).join('')}
+    </div>
+    
+    <div class="pagination">
+      <button class="btn" onclick="workPrevPage()" ${STATE.currentPage === 0 ? 'disabled' : ''}>← Anterior</button>
+      <span class="pagination-info">${start + 1}-${Math.min(start + STATE.pageSize, products.length)} de ${products.length}</span>
+      <button class="btn" onclick="workNextPage()" ${start + STATE.pageSize >= products.length ? 'disabled' : ''}>Siguiente →</button>
+    </div>
+    
+    <div class="action-bar">
+      <span class="info">${selected} de ${STATE.workingProducts.length} productos tienen selección</span>
+      <div class="flex gap-2">
+        <button class="btn btn-primary" onclick="confirmExport()" ${selected < STATE.workingProducts.length ? '' : ''}>
+          📦 Exportar
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderProductCard(product) {
+  const ps = getProductState(product.id);
+  const existingThumb = getExistingImage(product);
+  
+  // Build candidates array: existing image first, then downloaded
+  let candidates = [];
+  if (existingThumb) {
+    candidates.push({ idx: 'existing', src: existingThumb, isExisting: true });
+  }
+  for (let i = 1; i <= ps.candidates.length; i++) {
+    const src = getImagePath(product, i);
+    candidates.push({ idx: i, src, isExisting: false });
+  }
+  
+  const displayCandidates = candidates.slice(0, 8);
+  const remaining = candidates.length - displayCandidates.length;
+  
+  const selectedIdx = ps.selectedIdx !== null ? ps.selectedIdx : (existingThumb ? 'existing' : null);
+  
+  return `
+    <div class="product-card" id="card-${product.id}">
+      <div class="product-card-header">
+        <h3>${product.name}</h3>
+        <span class="text-secondary text-sm">${product.category || ''}</span>
+      </div>
+      <div class="product-card-body">
+        <p class="product-card-status">
+          ${ps.downloading ? `Descargando... ${ps.downloadedCount}/18` : 
+            candidates.length > 0 ? `${candidates.length} imágenes` : 'Sin imágenes'}
+        </p>
+        
+        <div class="product-thumbnails">
+          ${displayCandidates.map(c => `
+            <div class="thumb ${selectedIdx === c.idx ? 'selected' : ''}" 
+                 onclick="selectImage('${product.id}', ${c.idx === 'existing' ? -1 : c.idx}, '${c.src}')"
+                 data-idx="${c.idx}">
+              <img src="${c.src}" alt="" onerror="this.parentElement.innerHTML='?'">
+              <span class="num">${c.idx === 'existing' ? '✓' : c.idx}</span>
+              <span class="check">✓</span>
+            </div>
+          `).join('')}
+          ${remaining > 0 ? `
+            <div class="thumb" onclick="showAllCandidates('${product.id}')">
+              <div class="thumb-placeholder">+${remaining}</div>
+            </div>
+          ` : ''}
+        </div>
+        
+        <div class="product-card-actions">
+          <button class="btn btn-sm" onclick="showAllCandidates('${product.id}')">
+            Ver ${candidates.length > 0 ? 'más' : 'imágenes'}
+          </button>
+          ${ps.selectedIdx !== null ? `
+            <button class="btn btn-sm btn-success" onclick="clearSelection('${product.id}')">
+              ✓ Seleccionada
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProgressBar() {
+  const total = STATE.downloadQueue.length;
+  const done = STATE.downloadQueue.filter(p => {
+    const ps = getProductState(p.id);
+    return ps.candidates.length > 0;
+  }).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  
+  return `
+    <div class="progress-container">
+      <div class="progress-header">
+        <span>Descargando imágenes para ${done} de ${total} productos</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="fill" style="width:${pct}%"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderExpandedModal(productId, currentIdx) {
+  const ps = getProductState(productId);
+  const product = STATE.catalog.products.find(p => p.id === productId);
+  if (!product) return;
+  
+  let candidates = [];
+  const existingThumb = getExistingImage(product);
+  if (existingThumb) {
+    candidates.push({ idx: 'existing', src: existingThumb });
+  }
+  for (let i = 1; i <= ps.candidates.length; i++) {
+    candidates.push({ idx: i, src: getImagePath(product, i) });
+  }
+  
+  const current = candidates.find(c => c.idx === currentIdx) || candidates[0];
+  const currentIdxInArray = candidates.indexOf(current);
+  
+  return `
+    <div class="expanded-view">
+      <div class="expanded-image-container">
+        <img src="${current.src}" alt="${product.name}" id="expandedImg">
+      </div>
+      <div class="expanded-nav">
+        <button class="btn" onclick="expandedNav(${productId}, ${currentIdxInArray - 1})" ${currentIdxInArray === 0 ? 'disabled' : ''}>←</button>
+        <span class="counter">${currentIdxInArray + 1} / ${candidates.length}</span>
+        <button class="btn" onclick="expandedNav(${productId}, ${currentIdxInArray + 1})" ${currentIdxInArray === candidates.length - 1 ? 'disabled' : ''}>→</button>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="doSelectImage('${productId}', ${current.idx === 'existing' ? -1 : current.idx})">
+          ✓ Seleccionar esta
+        </button>
+        <button class="btn" onclick="closeModal()">Cerrar</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAllCandidatesModal(productId) {
+  const ps = getProductState(productId);
+  const product = STATE.catalog.products.find(p => p.id === productId);
+  if (!product) return '';
+  
+  let candidates = [];
+  const existingThumb = getExistingImage(product);
+  if (existingThumb) {
+    candidates.push({ idx: 'existing', src: existingThumb, label: 'Actual' });
+  }
+  for (let i = 1; i <= ps.candidates.length; i++) {
+    candidates.push({ idx: i, src: getImagePath(product, i), label: `#${i}` });
+  }
+  
+  const selectedIdx = ps.selectedIdx !== null ? ps.selectedIdx : (existingThumb ? 'existing' : null);
+  
+  return `
+    <h3 style="margin-bottom:16px">${product.name} - ${candidates.length} imágenes</h3>
+    <div class="all-candidates-grid">
+      ${candidates.map(c => `
+        <div class="thumb ${selectedIdx === c.idx ? 'selected' : ''}" 
+             onclick="doSelectImage('${productId}', ${c.idx === 'existing' ? -1 : c.idx}); closeModal();">
+          <img src="${c.src}" alt="" onerror="this.parentElement.innerHTML='?'">
+          <span class="num">${c.label}</span>
+          <span class="check">✓</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── Event Handlers ────────────────────────────────────────────────────────
+function attachEventListeners() {
+  document.getElementById('btnOpen')?.addEventListener('click', openFile);
+  document.getElementById('btnSave')?.addEventListener('click', saveFile);
+  document.getElementById('btnExport')?.addEventListener('click', showExportDialog);
+  document.getElementById('fileInput')?.addEventListener('change', handleFileSelect);
+  document.getElementById('btnNewCatalog')?.addEventListener('click', createNewCatalog);
+  document.getElementById('btnLoadCatalog')?.addEventListener('click', () => document.getElementById('fileInput').click());
+}
+
+function onSearchChange(value) {
+  STATE.search = value;
+  STATE.currentPage = 0;
+  render();
+}
+
+function onFilterChange(value) {
+  STATE.filter = value;
+  STATE.currentPage = 0;
+  render();
+}
+
+function getFilteredProducts() {
+  let products = STATE.catalog.products;
+  
+  if (STATE.search) {
+    const q = STATE.search.toLowerCase();
+    products = products.filter(p => p.name.toLowerCase().includes(q));
+  }
+  
+  if (STATE.filter === 'has-image') {
+    products = products.filter(p => hasExistingImage(p));
+  } else if (STATE.filter === 'no-image') {
+    products = products.filter(p => !hasExistingImage(p));
+  }
+  
+  return products;
+}
+
+function toggleProductSelection(productId, event) {
+  if (event.target.tagName === 'INPUT') return;
+  
+  if (STATE.selectedForWork.has(productId)) {
+    STATE.selectedForWork.delete(productId);
+  } else {
+    STATE.selectedForWork.add(productId);
+  }
+  render();
+}
+
+function selectAll() {
+  const products = getFilteredProducts();
+  products.forEach(p => STATE.selectedForWork.add(p.id));
+  render();
+}
+
+function clearSelection() {
+  STATE.selectedForWork.clear();
+  render();
+}
+
+function prevPage() {
+  STATE.currentPage--;
+  render();
+}
+
+function nextPage() {
+  STATE.currentPage++;
+  render();
+}
+
+function workPrevPage() {
+  STATE.currentPage--;
+  render();
+}
+
+function workNextPage() {
+  STATE.currentPage++;
+  render();
+}
+
+// ─── Step Navigation ────────────────────────────────────────────────────────
+function cancelSelect() {
+  STATE.currentStep = 'welcome';
+  STATE.catalog = null;
+  STATE.workingProducts = [];
+  STATE.selectedForWork.clear();
+  STATE.productState = {};
+  render();
+}
+
+function backToSelect() {
+  STATE.currentStep = 'select';
+  STATE.currentPage = 0;
+  STATE.isDownloading = false;
+  render();
+}
+
+function startWork() {
+  STATE.workingProducts = STATE.catalog.products.filter(p => STATE.selectedForWork.has(p.id));
+  STATE.currentStep = 'work';
+  STATE.currentPage = 0;
+  document.getElementById('btnSave').disabled = false;
+  document.getElementById('btnExport').disabled = false;
+  render();
+}
+
+function startDownloads() {
+  if (STATE.isDownloading) return;
+  
+  // Build download queue - only products without candidates
+  STATE.downloadQueue = STATE.workingProducts.filter(p => {
+    const ps = getProductState(p.id);
+    return ps.candidates.length === 0 && !hasExistingImage(p);
+  });
+  
+  if (STATE.downloadQueue.length === 0) {
+    alert('Todos los productos seleccionados ya tienen imágenes o candidatas.');
+    return;
+  }
+  
+  STATE.isDownloading = true;
+  STATE.currentDownloadIdx = 0;
+  
+  // Download first batch
+  downloadNextBatch();
+  render();
+}
+
+async function downloadNextBatch() {
+  if (STATE.currentDownloadIdx >= STATE.downloadQueue.length) {
+    STATE.isDownloading = false;
+    render();
+    return;
+  }
+  
+  // Process 3 at a time
+  const batch = [];
+  for (let i = 0; i < 3 && STATE.currentDownloadIdx + i < STATE.downloadQueue.length; i++) {
+    batch.push(STATE.downloadQueue[STATE.currentDownloadIdx + i]);
+  }
+  
+  await Promise.all(batch.map(async (product) => {
+    const ps = getProductState(product.id);
+    ps.downloading = true;
+    render();
+    
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: product.id,
+          productNum: product.num,
+          productName: product.name,
+          imagesBasePath: STATE.imagesBasePath,
+        })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        ps.candidates = Array.from({ length: data.count }, (_, i) => i + 1);
+        ps.downloadedCount = data.count;
+        if (ps.selectedIdx === null) {
+          ps.selectedIdx = 1;
+        }
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+    }
+    
+    ps.downloading = false;
+    render();
+  }));
+  
+  STATE.currentDownloadIdx += batch.length;
+  
+  // Update progress
+  render();
+  
+  // Continue after delay
+  setTimeout(downloadNextBatch, 500);
+}
+
+// ─── Image Selection ────────────────────────────────────────────────────────
+function selectImage(productId, idx, src) {
+  // Open expanded view
+  openExpandedModal(productId, idx);
+}
+
+function doSelectImage(productId, idx) {
+  const ps = getProductState(productId);
+  ps.selectedIdx = idx === -1 ? null : idx; // -1 means existing (clear selection)
+  render();
+}
+
+function clearSelection(productId) {
+  const ps = getProductState(productId);
+  ps.selectedIdx = null;
+  render();
+}
+
+function showAllCandidates(productId) {
+  const product = STATE.catalog.products.find(p => p.id === productId);
+  if (!product) return;
+  
+  const ps = getProductState(productId);
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  
+  content.innerHTML = renderAllCandidatesModal(productId);
+  modal.classList.add('active');
+}
+
+function openExpandedModal(productId, currentIdx) {
+  const modal = document.getElementById('modal');
+  const content = document.getElementById('modalContent');
+  
+  content.innerHTML = renderExpandedModal(productId, currentIdx);
+  modal.classList.add('active');
+}
+
+function expandedNav(productId, newIdx) {
+  const ps = getProductState(productId);
+  const product = STATE.catalog.products.find(p => p.id === productId);
+  if (!product) return;
+  
+  let candidates = [];
+  const existingThumb = getExistingImage(product);
+  if (existingThumb) {
+    candidates.push({ idx: 'existing' });
+  }
+  for (let i = 1; i <= ps.candidates.length; i++) {
+    candidates.push({ idx: i });
+  }
+  
+  if (newIdx < 0 || newIdx >= candidates.length) return;
+  
+  const content = document.getElementById('modalContent');
+  content.innerHTML = renderExpandedModal(productId, candidates[newIdx].idx);
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+
+// ─── File Operations ───────────────────────────────────────────────────────
+function openFile() {
+  document.getElementById('fileInput').click();
+}
+
+async function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  try {
+    const text = await file.text();
+    const catalog = JSON.parse(text);
+    
+    if (!catalog.products || !Array.isArray(catalog.products)) {
+      throw new Error('Formato JSON inválido: se espera { products: [...] }');
+    }
+    
+    STATE.catalog = catalog;
+    
+    // Assign IDs to products if they don't have
+    catalog.products.forEach((p, i) => {
+      if (!p.id) p.id = `p-${i}-${Date.now()}`;
+      if (!p.num) p.num = i + 1;
+    });
+    
+    // For now, use a placeholder images path
+    // User will need to set the correct path when loading
+    const jsonPath = file.name.replace(/[^/\\]+$/, '');
+    STATE.imagesBasePath = jsonPath + 'images/catalogs/';
+    
+    STATE.currentStep = 'select';
+    STATE.currentPage = 0;
+    
+    render();
+  } catch (err) {
+    alert('Error al cargar archivo: ' + err.message);
+  }
+}
+
+function createNewCatalog() {
+  const name = prompt('Nombre del catálogo:');
+  if (!name) return;
+  
+  STATE.catalog = {
+    name,
+    giros: [{ slug: slugify(name), name }],
+    products: [],
+  };
+  
+  STATE.currentStep = 'select';
+  STATE.currentPage = 0;
+  render();
+}
+
+async function saveFile() {
+  if (!STATE.catalog) return;
+  
+  // Update catalog with current selection state
+  const catalogToSave = {
+    ...STATE.catalog,
+    products: STATE.catalog.products.map(p => {
+      const ps = STATE.productState[p.id];
+      let image = p.image;
+      
+      if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
+        const slug = slugify(p.name);
+        if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
+          image = `/images/catalogs/${slug}.webp`;
+        } else {
+          image = `/images/catalogs/_candidates/${pad(p.num)}-${slug}/${pad(ps.selectedIdx)}.webp`;
+        }
+      }
+      
+      return { ...p, image };
+    }),
+  };
+  
+  const blob = new Blob([JSON.stringify(catalogToSave, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${STATE.catalog.name || 'catalog'}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function showExportDialog() {
+  const folder = prompt('Ruta de la carpeta de imágenes (ej: /home/user/gs-ecom/frontend/public/images/catalogs/):');
+  if (!folder) return;
+  
+  STATE.imagesBasePath = folder.endsWith('/') ? folder : folder + '/';
+  
+  // Do export
+  await doExport();
+}
+
+async function doExport() {
+  if (!STATE.catalog) return;
+  
+  const exportData = {
+    ...STATE.catalog,
+    products: STATE.catalog.products.map(p => {
+      const ps = STATE.productState[p.id];
+      let image = p.image;
+      
+      if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
+        const slug = slugify(p.name);
+        if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
+          image = `/images/catalogs/${slug}.webp`;
+        } else {
+          image = `/images/catalogs/_candidates/${pad(p.num)}-${slug}/${pad(ps.selectedIdx)}.webp`;
+        }
+      }
+      
+      return { ...p, image };
+    }),
+  };
+  
+  try {
+    const res = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        catalog: exportData,
+        imagesBasePath: STATE.imagesBasePath,
+        workingProducts: STATE.workingProducts.map(p => p.id),
+      })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      alert(`Exportado a: ${data.exportPath}\n\nCopia manualmente a gs-ecom.`);
+    } else {
+      alert('Error al exportar: ' + data.error);
+    }
+  } catch (err) {
+    alert('Error al exportar: ' + err.message);
+  }
+}
+
+function confirmExport() {
+  if (!confirm(`¿Exportar ${STATE.workingProducts.length} productos?\nSe generará catalog.json con todos los productos.`)) return;
+  doExport();
+}
+
+// ─── Initialize ────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  render();
+});
+</script>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal" onclick="if(event.target === this) closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modalTitle">Imagen</h3>
+      <button class="btn btn-sm" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalContent">
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
