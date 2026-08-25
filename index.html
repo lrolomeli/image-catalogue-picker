@@ -1339,9 +1339,15 @@ async function handleFileSelect(event) {
       }
     });
     
-    // User will need to set the correct path when loading
     const jsonPath = file.name.replace(/[^/\\]+$/, '');
-    STATE.imagesBasePath = jsonPath;
+    let imagesPath = jsonPath;
+
+    const backendCatalogsMatch = jsonPath.match(/^(.+)\/backend\/data\/catalogs\/$/);
+    if (backendCatalogsMatch) {
+      imagesPath = backendCatalogsMatch[1] + '/frontend/public/images/catalogs/';
+    }
+
+    STATE.imagesBasePath = imagesPath;
     
     STATE.currentStep = 'select';
     STATE.currentPage = 0;

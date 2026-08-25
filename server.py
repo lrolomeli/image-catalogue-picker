@@ -60,40 +60,38 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
             content_length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(content_length).decode("utf-8")
             data = json.loads(body)
-            
-            product_num = data.get("productNum")
+
+            product_id = data.get("productId")
             product_name = data.get("productName")
             images_base_path = data.get("imagesBasePath", "")
-            
-            if not product_num or not product_name:
+
+            if not product_id or not product_name:
                 self.send_json({"success": False, "error": "Missing parameters"})
                 return
-            
-            # Determine output directory
-            if images_base_path:
-                # Use the images base path
-                output_dir = images_base_path.replace("file://", "").replace("/images/catalogs", "")
-            else:
-                output_dir = str(BASE_DIR / "data" / "images")
-            
+
+            # Extract numeric part from productId (e.g., "ab-145" -> 145)
+            product_num = int(product_id.split("-")[-1])
+
+            # Determine output directory (imagesBasePath should point to catalog root)
+            output_dir = images_base_path.replace("file://", "")
+
             # Run the download script
             script_path = BASE_DIR / "download-images.js"
             result = subprocess.run(
-                ["node", str(script_path), str(product_num), product_name, output_dir],
+                ["node", str(script_path), str(product_num), product_name, output_dir, product_id],
                 capture_output=True,
                 text=True,
                 cwd=str(BASE_DIR),
                 timeout=120
             )
-            
+
             try:
-                # Parse last line as JSON
                 lines = result.stdout.strip().split('\n')
                 output = json.loads(lines[-1])
                 self.send_json({"success": True, **output})
             except:
                 self.send_json({"success": False, "error": result.stderr or result.stdout})
-                
+
         except subprocess.TimeoutExpired:
             self.send_json({"success": False, "error": "Timeout"})
         except Exception as e:

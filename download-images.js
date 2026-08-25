@@ -110,10 +110,8 @@ async function downloadImage(url, outputPath) {
 
 // ─── Main Download Function ──────────────────────────────────────────────────
 
-export async function downloadProductImages({ productNum, productName, outputDir }) {
-  const slug = nameToSlug(productName);
-  const folderName = `${pad(productNum)}-${slug}`;
-  const candidateDir = path.join(outputDir, "_candidates", folderName);
+export async function downloadProductImages({ productNum, productName, outputDir, productId }) {
+  const candidateDir = path.join(outputDir, "_candidates", productId);
 
   // Create directory
   if (!fs.existsSync(candidateDir)) {
@@ -177,10 +175,10 @@ export async function downloadProductImages({ productNum, productName, outputDir
 // ─── CLI Entry Point ─────────────────────────────────────────────────────────
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const [, , productNum, productName, outputDir] = process.argv;
-  
-  if (!productNum || !productName || !outputDir) {
-    console.error("Usage: node download-images.js <productNum> <productName> <outputDir>");
+  const [, , productNum, productName, outputDir, productId] = process.argv;
+
+  if (!productNum || !productName || !outputDir || !productId) {
+    console.error("Usage: node download-images.js <productNum> <productName> <outputDir> <productId>");
     process.exit(1);
   }
 
@@ -188,6 +186,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     productNum: parseInt(productNum),
     productName,
     outputDir,
+    productId,
   });
 
   console.log(JSON.stringify(result));
