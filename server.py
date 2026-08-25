@@ -50,6 +50,8 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_download()
         elif parsed.path == "/api/save":
             self.handle_save()
+        elif parsed.path == "/api/init-folders":
+            self.handle_init_folders()
         elif parsed.path == "/api/status":
             self.handle_status()
         else:
@@ -92,6 +94,27 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
 
         except subprocess.TimeoutExpired:
             self.send_json({"success": False, "error": "Timeout"})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def handle_init_folders(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            data = json.loads(body)
+
+            images_base_path = data.get("imagesBasePath", "")
+            if not images_base_path:
+                self.send_json({"success": False, "error": "Missing imagesBasePath"})
+                return
+
+            base_path = Path(images_base_path.replace("file://", ""))
+            candidates_path = base_path / "_candidates"
+
+            os.makedirs(base_path, exist_ok=True)
+            os.makedirs(candidates_path, exist_ok=True)
+
+            self.send_json({"success": True, "path": str(base_path)})
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 

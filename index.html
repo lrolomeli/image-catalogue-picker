@@ -657,7 +657,7 @@
   <div class="header-actions">
     <button class="btn" id="btnOpen">📂 Abrir</button>
     <button class="btn" id="btnSave" disabled>💾 Guardar</button>
-    <button class="btn btn-success" id="btnExport" disabled>📦 Exportar</button>
+    <button class="btn btn-success" id="btnExport" disabled>💾 Guardar</button>
   </div>
 </header>
 
@@ -1094,7 +1094,7 @@ function renderAllCandidatesModal(productId) {
 function attachEventListeners() {
   document.getElementById('btnOpen')?.addEventListener('click', openFile);
   document.getElementById('btnSave')?.addEventListener('click', saveFile);
-  document.getElementById('btnExport')?.addEventListener('click', showExportDialog);
+  document.getElementById('btnExport')?.addEventListener('click', confirmSave);
   document.getElementById('fileInput')?.addEventListener('change', handleFileSelect);
   document.getElementById('btnNewCatalog')?.addEventListener('click', createNewCatalog);
   document.getElementById('btnLoadCatalog')?.addEventListener('click', () => document.getElementById('fileInput').click());
@@ -1383,6 +1383,17 @@ async function handleFileSelect(event) {
     const jsonName = file.name.replace(/\.json$/, '');
     STATE.originalJsonName = jsonName;
     STATE.imagesBasePath = `data/images/${jsonName}/`;
+
+    // Create folders if they don't exist
+    try {
+      await fetch('/api/init-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imagesBasePath: STATE.imagesBasePath })
+      });
+    } catch (err) {
+      console.error('Error initializing folders:', err);
+    }
 
     STATE.currentStep = 'select';
     STATE.currentPage = 0;
