@@ -1381,8 +1381,9 @@ async function handleFileSelect(event) {
     });
 
     const jsonName = file.name.replace(/\.json$/, '');
+    const giroSlug = catalog.giro?.slug || jsonName;
     STATE.originalJsonName = jsonName;
-    STATE.imagesBasePath = `data/images/${jsonName}/`;
+    STATE.imagesBasePath = `data/images/catalogs/${giroSlug}/`;
 
     // Create folders if they don't exist
     try {
@@ -1432,9 +1433,9 @@ async function saveFile() {
       if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
         const slug = slugify(p.name);
         if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
-          image = `data/images/${giroSlug}/${slug}.webp`;
+          image = `data/images/catalogs/${giroSlug}/${slug}.webp`;
         } else {
-          image = `data/images/${giroSlug}/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
+          image = `data/images/catalogs/${giroSlug}/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
         }
       }
 
