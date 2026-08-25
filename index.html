@@ -656,7 +656,6 @@
   <h1>Catalog Studio</h1>
   <div class="header-actions">
     <button class="btn" id="btnOpen">📂 Abrir</button>
-    <button class="btn" id="btnSave" disabled>💾 Guardar</button>
     <button class="btn btn-success" id="btnExport" disabled>💾 Guardar</button>
   </div>
 </header>
@@ -909,9 +908,6 @@ function renderWorkStep() {
           <span>seleccionados</span>
         </div>
       </div>
-      <button class="btn btn-success" onclick="startDownloads()" id="btnStartDownload" ${STATE.isDownloading ? 'disabled' : ''}>
-        🔍 Descargar imágenes
-      </button>
     </div>
     
     ${STATE.isDownloading ? renderProgressBar() : ''}
@@ -1093,7 +1089,6 @@ function renderAllCandidatesModal(productId) {
 // ─── Event Handlers ────────────────────────────────────────────────────────
 function attachEventListeners() {
   document.getElementById('btnOpen')?.addEventListener('click', openFile);
-  document.getElementById('btnSave')?.addEventListener('click', saveFile);
   document.getElementById('btnExport')?.addEventListener('click', confirmSave);
   document.getElementById('fileInput')?.addEventListener('change', handleFileSelect);
   document.getElementById('btnNewCatalog')?.addEventListener('click', createNewCatalog);
@@ -1192,8 +1187,7 @@ function startWork() {
   STATE.workingProducts = STATE.catalog.products.filter(p => STATE.selectedForWork.has(p.id));
   STATE.currentStep = 'work';
   STATE.currentPage = 0;
-  document.getElementById('btnSave').disabled = false;
-  document.getElementById('btnExport').disabled = true;
+  document.getElementById('btnExport').disabled = false;
   render();
 
   // Auto-download candidates for products without them
