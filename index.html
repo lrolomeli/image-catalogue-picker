@@ -91,6 +91,7 @@
       max-width: 1200px;
       margin: 0 auto;
       padding: 24px;
+      padding-bottom: 80px;
     }
     
     /* Welcome / Load Screen */
@@ -775,9 +776,6 @@ function renderSelectStep() {
   const noImage = total - withImage;
   const selected = STATE.selectedForWork.size;
   
-  const start = STATE.currentPage * 50;
-  const pageProducts = products.slice(start, start + 50);
-  
   return `
     <div class="step-header">
       <div>
@@ -785,7 +783,7 @@ function renderSelectStep() {
         <p class="info">${total} productos • ${withImage} con imagen • ${noImage} sin imagen</p>
       </div>
       <div class="toolbar">
-        <input type="text" class="search-box" placeholder="Buscar producto..." 
+        <input type="text" class="search-box" placeholder="Buscar producto..."
                value="${STATE.search}" oninput="onSearchChange(this.value)">
         <select class="filter-select" onchange="onFilterChange(this.value)">
           <option value="all" ${STATE.filter === 'all' ? 'selected' : ''}>Todos (${total})</option>
@@ -796,7 +794,7 @@ function renderSelectStep() {
         <button class="btn btn-secondary" onclick="clearSelection()">Limpiar</button>
       </div>
     </div>
-    
+
     <div class="product-list">
       <div class="product-list-header">
         <span></span>
@@ -804,22 +802,16 @@ function renderSelectStep() {
         <span>Categoría</span>
         <span>Estado</span>
       </div>
-      
-      ${pageProducts.length === 0 ? `
+
+      ${products.length === 0 ? `
         <div class="empty-state">
           <div class="icon">🔍</div>
           <h3>Sin resultados</h3>
           <p>No hay productos que coincidan con tu búsqueda</p>
         </div>
-      ` : pageProducts.map(p => renderProductRow(p)).join('')}
-      
-      <div class="pagination">
-        <button class="btn btn-sm" onclick="prevPage()" ${STATE.currentPage === 0 ? 'disabled' : ''}>← Anterior</button>
-        <span class="pagination-info">${start + 1}-${Math.min(start + 50, products.length)} de ${products.length}</span>
-        <button class="btn btn-sm" onclick="nextPage()" ${start + 50 >= products.length ? 'disabled' : ''}>Siguiente →</button>
-      </div>
+      ` : products.map(p => renderProductRow(p)).join('')}
     </div>
-    
+
     <div class="action-bar">
       <span class="info">${selected} productos seleccionados</span>
       <div class="flex gap-2">
