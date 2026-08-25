@@ -1,0 +1,14 @@
+{
+  "name": "catalog-studio",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Visual tool for managing product catalogs with images",
+  "main": "download-images.js",
+  "scripts": {
+    "check": "node --check download-images.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "sharp": "^0.33.4"
+  }
+}

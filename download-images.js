@@ -25,7 +25,7 @@ const sharp = require("sharp");
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = path.dirname(_filename);
 
-dotenv.config({ path: path.join(_dirname, "../.env") });
+dotenv.config({ path: path.join(_dirname, ".env") });
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
