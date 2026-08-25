@@ -651,7 +651,7 @@
 // ─── State ────────────────────────────────────────────────────────────────
 const STATE = {
   // App data
-  catalog: null,        // { giros: [], products: [] }
+  catalog: null,        // { giro: { slug, name, desc }, products: [] }
   imagesBasePath: '',   // e.g., 'file:///path/to/images/catalogs/'
   
   // Working set
@@ -699,16 +699,21 @@ function getProductState(productId) {
   return STATE.productState[productId];
 }
 
+function getGiroSlug() {
+  return STATE.catalog?.giro?.slug || '';
+}
+
 function getImagePath(product, idx) {
   if (!STATE.imagesBasePath) return null;
   const slug = slugify(product.name);
-  const filename = `${slug}.webp`;
-  // For existing images (idx === 0 or 'existing')
+  const giroSlug = getGiroSlug();
+  const productId = product.id;
+  
   if (idx === 'existing' || idx === 0) {
-    return `${STATE.imagesBasePath}${filename}`;
+    return `${STATE.imagesBasePath}${giroSlug}/${slug}.webp`;
   }
-  // For downloaded candidates
-  return `${STATE.imagesBasePath}_candidates/${pad(product.num)}-${slug}/${pad(idx)}.webp`;
+  
+  return `${STATE.imagesBasePath}_candidates/${productId}/${pad(idx)}.webp`;
 }
 
 function hasExistingImage(product) {
@@ -776,7 +781,7 @@ function renderSelectStep() {
   return `
     <div class="step-header">
       <div>
-        <h2>${STATE.catalog.giros?.[0]?.name || 'Catálogo'}</h2>
+        <h2>${STATE.catalog.giro?.name || 'Catálogo'}</h2>
         <p class="info">${total} productos • ${withImage} con imagen • ${noImage} sin imagen</p>
       </div>
       <div class="toolbar">
@@ -1223,7 +1228,6 @@ async function downloadNextBatch() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productId: product.id,
-          productNum: product.num,
           productName: product.name,
           imagesBasePath: STATE.imagesBasePath,
         })
@@ -1335,16 +1339,17 @@ async function handleFileSelect(event) {
     
     STATE.catalog = catalog;
     
-    // Assign IDs to products if they don't have
+    // Assign IDs to products if they don't have (legacy support)
     catalog.products.forEach((p, i) => {
-      if (!p.id) p.id = `p-${i}-${Date.now()}`;
-      if (!p.num) p.num = i + 1;
+      if (!p.id) {
+        const prefix = catalog.giro?.slug?.substring(0, 2) || 'p';
+        p.id = `${prefix}-${String(i + 1).padStart(3, '0')}`;
+      }
     });
     
-    // For now, use a placeholder images path
     // User will need to set the correct path when loading
     const jsonPath = file.name.replace(/[^/\\]+$/, '');
-    STATE.imagesBasePath = jsonPath + 'images/catalogs/';
+    STATE.imagesBasePath = jsonPath;
     
     STATE.currentStep = 'select';
     STATE.currentPage = 0;
@@ -1360,8 +1365,7 @@ function createNewCatalog() {
   if (!name) return;
   
   STATE.catalog = {
-    name,
-    giros: [{ slug: slugify(name), name }],
+    giro: { slug: slugify(name), name, desc: '' },
     products: [],
   };
   
@@ -1373,9 +1377,10 @@ function createNewCatalog() {
 async function saveFile() {
   if (!STATE.catalog) return;
   
-  // Update catalog with current selection state
+  const giroSlug = getGiroSlug();
+  
   const catalogToSave = {
-    ...STATE.catalog,
+    giro: STATE.catalog.giro,
     products: STATE.catalog.products.map(p => {
       const ps = STATE.productState[p.id];
       let image = p.image;
@@ -1383,9 +1388,9 @@ async function saveFile() {
       if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
         const slug = slugify(p.name);
         if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
-          image = `/images/catalogs/${slug}.webp`;
+          image = `/images/catalogs/${giroSlug}/${slug}.webp`;
         } else {
-          image = `/images/catalogs/_candidates/${pad(p.num)}-${slug}/${pad(ps.selectedIdx)}.webp`;
+          image = `/images/catalogs/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
         }
       }
       
@@ -1397,7 +1402,7 @@ async function saveFile() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${STATE.catalog.name || 'catalog'}.json`;
+  a.download = `${giroSlug}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -1415,8 +1420,10 @@ async function showExportDialog() {
 async function doExport() {
   if (!STATE.catalog) return;
   
+  const giroSlug = getGiroSlug();
+  
   const exportData = {
-    ...STATE.catalog,
+    giro: STATE.catalog.giro,
     products: STATE.catalog.products.map(p => {
       const ps = STATE.productState[p.id];
       let image = p.image;
@@ -1424,9 +1431,9 @@ async function doExport() {
       if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
         const slug = slugify(p.name);
         if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
-          image = `/images/catalogs/${slug}.webp`;
+          image = `/images/catalogs/${giroSlug}/${slug}.webp`;
         } else {
-          image = `/images/catalogs/_candidates/${pad(p.num)}-${slug}/${pad(ps.selectedIdx)}.webp`;
+          image = `/images/catalogs/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
         }
       }
       

@@ -107,40 +107,35 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
             
             catalog = data.get("catalog", {})
             images_base_path = data.get("imagesBasePath", "")
-            working_products = data.get("workingProducts", [])
             
             if not catalog:
                 self.send_json({"success": False, "error": "Missing catalog"})
                 return
             
-            # Create export directory
-            catalog_name = catalog.get("name", "catalog")
-            export_dir = BASE_DIR / "exports" / catalog_name
+            giro_slug = catalog.get("giro", {}).get("slug", "catalog")
+            
+            export_dir = BASE_DIR / "exports" / giro_slug
             images_dir = export_dir / "images"
             images_dir.mkdir(parents=True, exist_ok=True)
             
-            # Write catalog.json
             catalog_path = export_dir / "catalog.json"
             with open(catalog_path, "w", encoding="utf-8") as f:
                 json.dump(catalog, f, indent=2, ensure_ascii=False)
             
-            # Copy selected images
-            source_base = images_base_path.replace("file://", "").replace("/images/catalogs", "") + "/images/catalogs"
+            source_base = images_base_path.replace("file://", "")
             
             for product in catalog.get("products", []):
                 image = product.get("image")
                 if not image:
                     continue
                 
-                # Determine source and destination
                 if "_candidates" in image:
-                    # Downloaded candidate
                     filename = Path(image).name
-                    src = Path(source_base) / "_candidates" / Path(image).parent.name / filename
+                    candidate_folder = Path(image).parent.name
+                    src = Path(source_base) / "_candidates" / candidate_folder / filename
                 else:
-                    # Existing image
                     filename = Path(image).name
-                    src = Path(source_base) / filename
+                    src = Path(source_base) / image.lstrip("/")
                 
                 dst = images_dir / filename
                 
