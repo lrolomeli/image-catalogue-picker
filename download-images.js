@@ -144,26 +144,42 @@ export async function downloadProductImages({ productNum, productName, outputDir
     return { success: false, error: "No image sources available", count: existing };
   }
 
-  // Download up to 18
+  const toDownload = Math.min(urls.length, 9 - existing);
+  if (toDownload <= 0) {
+    return { success: true, count: existing, downloaded: 0 };
+  }
+
   let downloaded = 0;
   let bestPath = null;
-  const toDownload = Math.min(urls.length, 18 - existing);
+  const BATCH_SIZE = 4;
 
-  for (let j = 0; j < toDownload; j++) {
-    const idx = existing + j + 1;
-    const imgPath = path.join(candidateDir, `${pad(idx)}.webp`);
-    
-    if (fs.existsSync(imgPath)) {
-      downloaded++;
-      continue;
+  for (let i = 0; i < toDownload; i += BATCH_SIZE) {
+    const batch = [];
+    const batchEnd = Math.min(i + BATCH_SIZE, toDownload);
+
+    for (let j = i; j < batchEnd; j++) {
+      const idx = existing + j + 1;
+      const imgPath = path.join(candidateDir, `${pad(idx)}.webp`);
+
+      if (fs.existsSync(imgPath)) {
+        downloaded++;
+        continue;
+      }
+
+      batch.push(
+        downloadImage(urls[j], imgPath).then(ok => {
+          if (ok) {
+            downloaded++;
+            if (!bestPath) bestPath = imgPath;
+          }
+        })
+      );
     }
 
-    const ok = await downloadImage(urls[j], imgPath);
-    if (ok) {
-      downloaded++;
-      if (!bestPath) bestPath = imgPath;
+    await Promise.all(batch);
+    if (i + BATCH_SIZE < toDownload) {
+      await delay(50);
     }
-    await delay(250);
   }
 
   const totalNow = existing + downloaded;
