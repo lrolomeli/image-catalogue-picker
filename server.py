@@ -31,8 +31,8 @@ def slugify(text):
     text = ''.join(c for c in text if c.isalnum() or c == '-')
     return text.strip('-')
 
-def pad(n, len=2):
-    return str(n).padStart(len, '0')
+def pad(n, length=2):
+    return str(n).zfill(length)
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3456
 BASE_DIR = Path(__file__).parent.resolve()
