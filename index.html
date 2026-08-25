@@ -707,13 +707,12 @@ function getGiroSlug() {
 function getImagePath(product, idx) {
   if (!STATE.imagesBasePath) return null;
   const slug = slugify(product.name);
-  const giroSlug = getGiroSlug();
   const productId = product.id;
-  
+
   if (idx === 'existing' || idx === 0) {
-    return `${STATE.imagesBasePath}${giroSlug}/${slug}.webp`;
+    return `${STATE.imagesBasePath}${slug}.webp`;
   }
-  
+
   return `${STATE.imagesBasePath}_candidates/${productId}/${pad(idx)}.webp`;
 }
 
@@ -1320,38 +1319,30 @@ function openFile() {
 async function handleFileSelect(event) {
   const file = event.target.files[0];
   if (!file) return;
-  
+
   try {
     const text = await file.text();
     const catalog = JSON.parse(text);
-    
+
     if (!catalog.products || !Array.isArray(catalog.products)) {
       throw new Error('Formato JSON inválido: se espera { products: [...] }');
     }
-    
+
     STATE.catalog = catalog;
-    
-    // Assign IDs to products if they don't have (legacy support)
+
     catalog.products.forEach((p, i) => {
       if (!p.id) {
         const prefix = catalog.giro?.slug?.substring(0, 2) || 'p';
         p.id = `${prefix}-${String(i + 1).padStart(3, '0')}`;
       }
     });
-    
-    const jsonPath = file.name.replace(/[^/\\]+$/, '');
-    let imagesPath = jsonPath;
 
-    const backendCatalogsMatch = jsonPath.match(/^(.+)\/backend\/data\/catalogs\/$/);
-    if (backendCatalogsMatch) {
-      imagesPath = backendCatalogsMatch[1] + '/frontend/public/images/catalogs/';
-    }
+    const jsonName = file.name.replace(/\.json$/, '');
+    STATE.imagesBasePath = `data/images/${jsonName}/`;
 
-    STATE.imagesBasePath = imagesPath;
-    
     STATE.currentStep = 'select';
     STATE.currentPage = 0;
-    
+
     render();
   } catch (err) {
     alert('Error al cargar archivo: ' + err.message);
@@ -1374,28 +1365,28 @@ function createNewCatalog() {
 
 async function saveFile() {
   if (!STATE.catalog) return;
-  
+
   const giroSlug = getGiroSlug();
-  
+
   const catalogToSave = {
     giro: STATE.catalog.giro,
     products: STATE.catalog.products.map(p => {
       const ps = STATE.productState[p.id];
       let image = p.image;
-      
+
       if (ps?.selectedIdx !== null && ps?.selectedIdx !== undefined) {
         const slug = slugify(p.name);
         if (ps.selectedIdx === -1 || ps.selectedIdx === 'existing') {
-          image = `/images/catalogs/${giroSlug}/${slug}.webp`;
+          image = `data/images/${giroSlug}/${slug}.webp`;
         } else {
-          image = `/images/catalogs/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
+          image = `data/images/${giroSlug}/_candidates/${p.id}/${pad(ps.selectedIdx)}.webp`;
         }
       }
-      
+
       return { ...p, image };
     }),
   };
-  
+
   const blob = new Blob([JSON.stringify(catalogToSave, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

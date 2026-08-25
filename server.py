@@ -69,13 +69,11 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"success": False, "error": "Missing parameters"})
                 return
 
-            # Extract numeric part from productId (e.g., "ab-145" -> 145)
             product_num = int(product_id.split("-")[-1])
-
-            # Determine output directory (imagesBasePath should point to catalog root)
             output_dir = images_base_path.replace("file://", "")
 
-            # Run the download script
+            os.makedirs(output_dir, exist_ok=True)
+
             script_path = BASE_DIR / "download-images.js"
             result = subprocess.run(
                 ["node", str(script_path), str(product_num), product_name, output_dir, product_id],
