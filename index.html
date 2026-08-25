@@ -942,9 +942,12 @@ function renderProductCard(product) {
   if (existingThumb) {
     candidates.push({ idx: 'existing', src: existingThumb, isExisting: true });
   }
-  for (let i = 1; i <= ps.candidates.length; i++) {
-    const src = getImagePath(product, i);
-    candidates.push({ idx: i, src, isExisting: false });
+  for (const idx of ps.candidates) {
+    const numIdx = Number(idx);
+    if (!Number.isInteger(numIdx) || numIdx < 1) continue;
+    const src = getImagePath(product, numIdx);
+    if (!src) continue;
+    candidates.push({ idx: numIdx, src, isExisting: false });
   }
   
   const displayCandidates = candidates.slice(0, 8);
