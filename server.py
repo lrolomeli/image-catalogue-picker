@@ -19,8 +19,20 @@ import os
 import sys
 import subprocess
 import shutil
+import unicodedata
 from pathlib import Path
 from urllib.parse import urlparse
+
+def slugify(text):
+    text = text.lower()
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore').decode('ascii')
+    text = text.replace(" ", "-")
+    text = ''.join(c for c in text if c.isalnum() or c == '-')
+    return text.strip('-')
+
+def pad(n, len=2):
+    return str(n).padStart(len, '0')
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3456
 BASE_DIR = Path(__file__).parent.resolve()
@@ -144,23 +156,17 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
                 selected_idx = selection.get("selectedIdx")
                 existing_image = product.get("image")
 
-                new_image = None
+                new_image = existing_image
 
-                if selected_idx is not None and selected_idx != 'existing':
+                if selected_idx is not None and selected_idx != 'existing' and selected_idx != -1:
                     candidate_dir = Path(source_base) / "_candidates" / product_id
                     if candidate_dir.exists():
                         src_webp = candidate_dir / f"{pad(selected_idx)}.webp"
                         if src_webp.exists():
-                            slug = product.get("name", "").lower().replace(" ", "-")
+                            slug = slugify(product.get("name", ""))
                             dst_webp = images_dir / f"{slug}.webp"
                             shutil.copy2(src_webp, dst_webp)
                             new_image = f"/images/catalogs/{giro_slug}/{slug}.webp"
-                        else:
-                            new_image = existing_image
-                    else:
-                        new_image = existing_image
-                elif selected_idx == 'existing' or (selected_idx is None and existing_image):
-                    new_image = existing_image
 
                 saved_products.append({
                     **product,
