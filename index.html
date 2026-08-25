@@ -1188,11 +1188,10 @@ function startWork() {
   STATE.currentStep = 'work';
   STATE.currentPage = 0;
   document.getElementById('btnExport').disabled = false;
-  render();
 
-  // First check existing candidates on disk
+  // Wait for candidates check before rendering
   checkExistingCandidates().then(() => {
-    // Then auto-download only missing ones
+    render();
     autoDownloadCandidates();
   });
 }
