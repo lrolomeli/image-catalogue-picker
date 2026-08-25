@@ -64,6 +64,8 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_save()
         elif parsed.path == "/api/init-folders":
             self.handle_init_folders()
+        elif parsed.path == "/api/check-candidates":
+            self.handle_check_candidates()
         elif parsed.path == "/api/status":
             self.handle_status()
         else:
@@ -127,6 +129,36 @@ class CatalogHandler(http.server.SimpleHTTPRequestHandler):
             os.makedirs(candidates_path, exist_ok=True)
 
             self.send_json({"success": True, "path": str(base_path)})
+        except Exception as e:
+            self.send_json({"success": False, "error": str(e)})
+
+    def handle_check_candidates(self):
+        try:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            data = json.loads(body)
+
+            product_ids = data.get("productIds", [])
+            images_base_path = data.get("imagesBasePath", "")
+
+            if not images_base_path:
+                self.send_json({"success": False, "error": "Missing imagesBasePath"})
+                return
+
+            base_path = Path(images_base_path.replace("file://", ""))
+            candidates_path = base_path / "_candidates"
+
+            result = {}
+            for product_id in product_ids:
+                product_candidates_path = candidates_path / product_id
+                if product_candidates_path.exists():
+                    files = sorted([f for f in os.listdir(product_candidates_path) if f.endswith('.webp')])
+                    indices = [int(f.replace('.webp', '')) for f in files if f.replace('.webp', '').isdigit()]
+                    result[product_id] = indices
+                else:
+                    result[product_id] = []
+
+            self.send_json({"success": True, "candidates": result})
         except Exception as e:
             self.send_json({"success": False, "error": str(e)})
 

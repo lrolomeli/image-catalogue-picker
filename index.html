@@ -1190,8 +1190,35 @@ function startWork() {
   document.getElementById('btnExport').disabled = false;
   render();
 
-  // Auto-download candidates for products without them
-  autoDownloadCandidates();
+  // First check existing candidates on disk
+  checkExistingCandidates().then(() => {
+    // Then auto-download only missing ones
+    autoDownloadCandidates();
+  });
+}
+
+async function checkExistingCandidates() {
+  const productIds = STATE.workingProducts.map(p => p.id);
+  try {
+    const res = await fetch('/api/check-candidates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productIds: productIds,
+        imagesBasePath: STATE.imagesBasePath,
+      })
+    });
+    const data = await res.json();
+
+    if (data.success && data.candidates) {
+      for (const [productId, indices] of Object.entries(data.candidates)) {
+        const ps = getProductState(productId);
+        ps.candidates = indices;
+      }
+    }
+  } catch (err) {
+    console.error('Error checking candidates:', err);
+  }
 }
 
 async function autoDownloadCandidates() {
