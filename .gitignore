@@ -1,6 +1,22 @@
+# Dependencies
 node_modules/
+
+# Environment / secrets
 .env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
 *.pyc
-exports/
+
+# Working data & generated output
 data/
+exports/
+
+# OS / editor
+.DS_Store
+*.log
+
+# Git filter-branch backups
+*.orig
